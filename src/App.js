@@ -1,315 +1,459 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
 import { skillCourseMap } from './data/skillCourseData';
-// import OpenAI from 'openai'; // Uncomment when you have API key
+import { leetcodeProblems } from './data/leetcodeProblems';
+import emailjs from 'emailjs-com'; // Add this import
 
 const levelOrder = { "Beginner": 0, "Intermediate": 1, "Advanced": 2 };
 
-// OpenAI configuration (add your API key to .env file)
-// const openai = new OpenAI({
-//   apiKey: process.env.REACT_APP_OPENAI_API_KEY,
-//   dangerouslyAllowBrowser: true
-// });
-
-// Function to generate dynamic skill path using GPT
+// Function to generate dynamic skill path and explanations using GPT
 const generateSkillPath = async (jobTitle) => {
   try {
-    const prompt = `Generate a learning roadmap for "${jobTitle}" with 4-6 skills. 
-    Return ONLY a JSON array with this exact format:
-    [
-      {
-        "skill": "Skill Name",
-        "course": "https://example.com/course",
-        "level": "Beginner"
-      }
-    ]
-    
-    Use these course platforms: Coursera, freeCodeCamp, YouTube, Khan Academy, edX.
-    Levels: Beginner, Intermediate, Advanced.
-    Focus on free courses.`;
+    const sampleResponses = {
+      "Full Stack Developer": [
+        {
+          skill: "HTML & CSS",
+          course: "https://www.freecodecamp.org/learn/responsive-web-design/",
+          level: "Beginner",
+          importance: "HTML and CSS are the foundational languages of the web. They're essential for creating the structure and appearance of websites, and mastering them is the first step to understanding how the web works."
+        },
+        {
+          skill: "JavaScript",
+          course: "https://www.youtube.com/watch?v=PkZNo7MFNFg",
+          level: "Beginner",
+          importance: "JavaScript is the language of interactivity on the web. It allows you to create dynamic content that responds to user actions and is essential for modern web applications."
+        },
+        {
+          skill: "React.js",
+          course: "https://react.dev/learn",
+          level: "Intermediate",
+          importance: "React is one of the most in-demand frontend frameworks. It enables you to build reusable UI components and manage application state efficiently, making it easier to create complex interfaces."
+        },
+        {
+          skill: "Node.js & Express",
+          course: "https://www.youtube.com/watch?v=Oe421EPjeBE",
+          level: "Intermediate",
+          importance: "Node.js lets you use JavaScript for server-side development. With Express, you can quickly build APIs and backends, which completes your full-stack skillset."
+        },
+        {
+          skill: "MongoDB",
+          course: "https://www.freecodecamp.org/learn/back-end-development-and-apis/#mongodb-and-mongoose",
+          level: "Intermediate",
+          importance: "MongoDB is a NoSQL database that works seamlessly with JavaScript applications. Learning it gives you the ability to store and manage data, which is crucial for building complete applications."
+        },
+        {
+          skill: "Docker & CI/CD",
+          course: "https://www.coursera.org/learn/docker-kubernetes-and-helm-tools",
+          level: "Advanced",
+          importance: "Docker helps standardize development environments and deployment processes. Understanding containerization and CI/CD pipelines makes you a more versatile developer who can take projects from concept to production."
+        }
+      ],
+      "Data Scientist": [
+        {
+          skill: "Python Programming",
+          course: "https://www.freecodecamp.org/learn/scientific-computing-with-python/",
+          level: "Beginner",
+          importance: "Python is the primary language for data science. Its simple syntax and powerful libraries make it ideal for data manipulation, analysis, and building machine learning models."
+        },
+        {
+          skill: "Statistics & Probability",
+          course: "https://www.khanacademy.org/math/statistics-probability",
+          level: "Beginner",
+          importance: "Statistics forms the mathematical foundation of data science. Understanding statistical concepts is crucial for properly interpreting data, designing experiments, and drawing valid conclusions."
+        },
+        {
+          skill: "Pandas & NumPy",
+          course: "https://www.youtube.com/watch?v=vmEHCJofslg",
+          level: "Intermediate",
+          importance: "Pandas and NumPy are essential libraries for data manipulation in Python. They allow you to efficiently clean, transform, and analyze large datasets - a daily task for any data scientist."
+        },
+        {
+          skill: "Machine Learning",
+          course: "https://www.coursera.org/learn/machine-learning",
+          level: "Intermediate",
+          importance: "Machine learning is the core of modern data science. It enables you to build predictive models that can identify patterns and make data-driven decisions automatically."
+        },
+        {
+          skill: "Data Visualization",
+          course: "https://www.freecodecamp.org/learn/data-visualization/",
+          level: "Intermediate",
+          importance: "Data visualization is about communicating insights effectively. Strong visualization skills help you tell compelling stories with data and make your findings accessible to non-technical stakeholders."
+        },
+        {
+          skill: "Deep Learning",
+          course: "https://www.youtube.com/watch?v=tPYj3fFJGjk",
+          level: "Advanced",
+          importance: "Deep learning powers the most sophisticated AI systems today. Understanding neural networks allows you to work on cutting-edge problems like computer vision, natural language processing, and more."
+        }
+      ]
+    };
 
-    // Uncomment when you have OpenAI API key
-    // const response = await openai.chat.completions.create({
-    //   model: "gpt-3.5-turbo",
-    //   messages: [{ role: "user", content: prompt }],
-    //   temperature: 0.7,
-    //   max_tokens: 1000
-    // });
+    // Return sample data based on job title, or first set if not found
+    const normalizedJobTitle = jobTitle.toLowerCase();
+    if (normalizedJobTitle.includes("full stack") || normalizedJobTitle.includes("web")) {
+      return sampleResponses["Full Stack Developer"];
+    } else if (normalizedJobTitle.includes("data") || normalizedJobTitle.includes("scientist") || normalizedJobTitle.includes("analyst")) {
+      return sampleResponses["Data Scientist"];
+    } else {
+      // Default to full stack if no match
+      return sampleResponses["Full Stack Developer"];
+    }
 
-    // const skillsData = JSON.parse(response.choices[0].message.content);
-    // return skillsData;
-
-    // Mock response for demonstration (remove when using real API)
-    return [
-      {
-        skill: `${jobTitle} Fundamentals`,
-        course: "https://www.freecodecamp.org/learn/",
-        level: "Beginner"
-      },
-      {
-        skill: `Advanced ${jobTitle} Techniques`,
-        course: "https://www.coursera.org/",
-        level: "Advanced"
-      }
-    ];
   } catch (error) {
-    console.error('Error generating skill path:', error);
-    return null;
+    console.error("Error generating skill path:", error);
+    return [];
   }
-};
-
-// Function to check if search term matches job title (fuzzy matching)
-const fuzzyMatch = (searchTerm, jobTitle) => {
-  const search = searchTerm.toLowerCase().trim();
-  const title = jobTitle.toLowerCase();
-  
-  // Exact match
-  if (title.includes(search)) return true;
-  
-  // Check individual words
-  const searchWords = search.split(' ');
-  const titleWords = title.split(' ');
-  
-  return searchWords.some(searchWord => 
-    titleWords.some(titleWord => 
-      titleWord.includes(searchWord) || searchWord.includes(titleWord)
-    )
-  );
-};
-
-// Get job title recommendations
-const getRecommendations = (searchTerm) => {
-  if (!searchTerm.trim()) return [];
-  
-  return Object.keys(skillCourseMap).filter(jobTitle => 
-    fuzzyMatch(searchTerm, jobTitle)
-  );
 };
 
 function App() {
   const [jobTitle, setJobTitle] = useState('');
-  const [cgpa, setCgpa] = useState('');
   const [skills, setSkills] = useState([]);
+  const [visibleSkills, setVisibleSkills] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isDynamicGeneration, setIsDynamicGeneration] = useState(false);
-  const [showCgpaWarning, setShowCgpaWarning] = useState(false);
+  const [showLeetcodeSection, setShowLeetcodeSection] = useState(true);
   const isMobile = window.innerWidth <= 768;
+  const [typingIndex, setTypingIndex] = useState(-1);
+  const [typedText, setTypedText] = useState('');
+  const [currentCharIndex, setCurrentCharIndex] = useState(0);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showContactForm, setShowContactForm] = useState(false);
+  const [contactForm, setContactForm] = useState({
+    name: '',
+    email: '',
+    issue: ''
+  });
+  const [contactStatus, setContactStatus] = useState('');
+  const [leetcodeSortOrder, setLeetcodeSortOrder] = useState('easy-to-hard'); // Add this line
 
-  // Get responsive styles
-  const getResponsiveStyles = () => {
-    return {
-      container: {
-        padding: isMobile ? '10px' : '20px',
-        maxWidth: '100%',
-        overflowX: 'hidden'
-      },
-      inputSection: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '15px',
-        alignItems: 'center',
-        width: '100%',
-        padding: '0 10px'
-      },
-      cgpaContainer: {
-        position: 'relative',
-        marginBottom: showCgpaWarning ? '80px' : '0px',
-        width: isMobile ? '100%' : 'auto'
-      },
-      cgpaInput: {
-        padding: '12px',
-        fontSize: '16px',
-        width: isMobile ? '100%' : '250px',
-        maxWidth: isMobile ? '300px' : '250px',
-        borderRadius: '6px',
-        border: showCgpaWarning ? '2px solid #ff6b6b' : '1px solid #61dafb',
-        marginRight: isMobile ? '0' : '10px',
-        marginBottom: isMobile ? '10px' : '0'
-      },
-      jobTitleContainer: {
-        position: 'relative',
-        width: isMobile ? '100%' : 'auto',
-        display: 'flex',
-        flexDirection: isMobile ? 'column' : 'row',
-        gap: isMobile ? '10px' : '0',
-        alignItems: isMobile ? 'stretch' : 'center'
-      },
-      jobTitleInput: {
-        padding: '12px',
-        fontSize: '16px',
-        width: isMobile ? '100%' : '400px',
-        maxWidth: isMobile ? '100%' : '400px',
-        borderRadius: '6px',
-        border: '1px solid #61dafb'
-      },
-      searchButton: {
-        marginLeft: isMobile ? '0' : '10px',
-        padding: '12px 20px',
-        fontSize: '16px',
-        background: (loading || !cgpa || !jobTitle) ? '#666' : '#61dafb',
-        color: '#000',
-        border: 'none',
-        borderRadius: '6px',
-        cursor: (loading || !cgpa || !jobTitle) ? 'not-allowed' : 'pointer',
-        width: isMobile ? '100%' : 'auto'
-      },
-      warning: {
-        position: 'absolute',
-        top: '100%',
-        left: '0',
-        right: '0',
-        background: '#ff6b6b',
-        color: 'white',
-        padding: '10px',
-        borderRadius: '6px',
-        marginTop: '5px',
-        fontSize: isMobile ? '13px' : '14px',
-        zIndex: 1000,
-        boxShadow: '0 4px 12px rgba(255, 107, 107, 0.3)',
-        maxWidth: isMobile ? '100%' : '350px',
-        animation: 'fadeIn 0.3s ease-in'
-      },
-      resultsSection: {
-        marginTop: '32px',
-        width: '100%',
-        maxWidth: isMobile ? '100%' : '500px',
-        padding: '0 10px'
-      },
-      skillCard: {
-        background: 'linear-gradient(135deg, #20232a 0%, #2d3748 100%)',
-        borderRadius: '12px',
-        padding: isMobile ? '15px' : '20px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-        border: '1px solid #444',
-        position: 'relative',
-        marginBottom: '16px'
-      },
-      levelBadge: {
-        position: 'absolute',
-        top: '10px',
-        right: '10px',
-        padding: '4px 8px',
-        borderRadius: '8px',
-        fontSize: '11px',
-        fontWeight: 'bold',
-        color: 'white'
-      },
-      startLearningButton: {
-        color: '#61dafb',
-        textDecoration: 'none',
-        fontSize: isMobile ? '14px' : '15px',
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '5px',
-        padding: isMobile ? '10px 12px' : '8px 12px',
-        background: 'rgba(97, 218, 251, 0.1)',
-        borderRadius: '6px',
-        border: '1px solid rgba(97, 218, 251, 0.3)',
-        transition: 'all 0.3s ease',
-        width: isMobile ? '100%' : 'auto',
-        justifyContent: 'center'
+  // Popular job titles to show on focus
+  const popularJobTitles = [
+    "Full Stack Developer",
+    "Data Scientist", 
+    "Frontend Developer",
+    "Backend Developer",
+    "DevOps Engineer",
+    "Machine Learning Engineer",
+    "UI/UX Designer",
+    "Product Manager",
+    "Cybersecurity Specialist",
+    "Mobile App Developer",
+    "Cloud Architect",
+    "Business Analyst",
+    "QA Engineer",
+    "Database Administrator",
+    "Software Engineer"
+  ];
+
+  // Auto-search effect when job title changes (debounced)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (jobTitle.trim().length > 2) {
+        handleSearch();
       }
-    };
-  };
+    }, 800);
 
-  // CGPA validation and warning with 3-second auto-hide
-  const handleCgpaChange = (e) => {
-    const value = e.target.value;
-    setCgpa(value);
-    
-    if (value && parseFloat(value) < 9.0) {
-      setShowCgpaWarning(true);
-      // Auto-hide warning after 3 seconds
-      setTimeout(() => {
-        setShowCgpaWarning(false);
-      }, 3000);
-    } else {
-      setShowCgpaWarning(false);
+    return () => clearTimeout(timer);
+  }, [jobTitle]);
+
+  // Staggered animation effect for roadmap skills
+  useEffect(() => {
+    if (skills && skills.length > 0) {
+      // Reset visible skills
+      setVisibleSkills([]);
+      setTypingIndex(-1);
+      setTypedText('');
+      setCurrentCharIndex(0);
+      
+      // Add skills with staggered delay, ensuring each item is valid
+      let index = 0;
+      const interval = setInterval(() => {
+        if (index < skills.length && skills[index]) {
+          setVisibleSkills(prev => [...prev, skills[index]]);
+          index++;
+        } else {
+          clearInterval(interval);
+          // Start typing the first explanation
+          setTimeout(() => setTypingIndex(0), 500);
+        }
+      }, 800);
+      
+      return () => clearInterval(interval);
     }
-  };
+  }, [skills]);
+  
+  // Typewriter effect for skill importance
+  useEffect(() => {
+    if (typingIndex >= 0 && typingIndex < visibleSkills.length && visibleSkills[typingIndex]) {
+      const currentImportance = visibleSkills[typingIndex]?.importance || '';
+      
+      if (currentCharIndex < currentImportance.length) {
+        const timer = setTimeout(() => {
+          setTypedText(prev => prev + currentImportance[currentCharIndex]);
+          setCurrentCharIndex(currentCharIndex + 1);
+        }, 15);
+        
+        return () => clearTimeout(timer);
+      } else if (typingIndex < visibleSkills.length - 1) {
+        const timer = setTimeout(() => {
+          setTypingIndex(typingIndex + 1);
+          setTypedText('');
+          setCurrentCharIndex(0);
+        }, 1000);
+        
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [typingIndex, currentCharIndex, visibleSkills]);
 
   const handleSearch = async () => {
-    // Validate CGPA first
-    if (!cgpa || cgpa < 0 || cgpa > 10) {
-      alert('Please enter a valid CGPA between 0 and 10');
-      return;
-    }
-
     const normalized = jobTitle.trim().toLowerCase();
     setLoading(true);
     
-    // Try exact match first in predefined data
-    let found = Object.keys(skillCourseMap).find(
-      key => key.toLowerCase() === normalized
-    );
-    
-    // If no exact match, try fuzzy matching
-    if (!found) {
-      const matches = getRecommendations(jobTitle);
-      if (matches.length === 1) {
-        found = matches[0];
-      } else if (matches.length > 1) {
-        setRecommendations(matches);
-        setSkills([]);
-        setLoading(false);
-        return;
-      }
-    }
-    
-    if (found) {
-      // Use predefined data
-      const sortedSkills = [...skillCourseMap[found]].sort(
-        (a, b) => levelOrder[a.level] - levelOrder[b.level]
+    try {
+      // Try exact match first in predefined data
+      let found = Object.keys(skillCourseMap || {}).find(
+        key => key.toLowerCase() === normalized
       );
-      setSkills(sortedSkills);
-      setRecommendations([]);
-      setIsDynamicGeneration(false);
-    } else {
-      // Generate dynamic skill path using AI
-      const dynamicSkills = await generateSkillPath(jobTitle);
-      if (dynamicSkills) {
-        const sortedSkills = dynamicSkills.sort(
-          (a, b) => levelOrder[a.level] - levelOrder[b.level]
-        );
-        setSkills(sortedSkills);
-        setIsDynamicGeneration(true);
-      } else {
-        setSkills([]);
+      
+      // If no exact match, try fuzzy matching
+      if (!found) {
+        const matches = getRecommendations(jobTitle);
+        if (matches.length === 1) {
+          found = matches[0];
+        } else if (matches.length > 1) {
+          setRecommendations(matches);
+          setSkills([]);
+          setVisibleSkills([]);
+          setLoading(false);
+          return;
+        }
       }
-      setRecommendations([]);
+      
+      if (found) {
+        // Use predefined data
+        const rawSkills = skillCourseMap[found] || [];
+        const validSkills = rawSkills
+          .filter(skill => skill && typeof skill === 'object' && skill.skill)
+          .map(skill => ({
+            skill: skill.skill || 'Unknown Skill',
+            course: skill.course || '#',
+            level: skill.level || 'Beginner',
+            importance: skill.importance || `${skill.skill} is a crucial skill for ${found} roles because it helps you build the foundation needed for more complex tasks.`
+          }))
+          .sort((a, b) => (levelOrder[a.level] || 0) - (levelOrder[b.level] || 0));
+        
+        setSkills(validSkills);
+        setRecommendations([]);
+        setIsDynamicGeneration(false);
+      } else {
+        // Generate dynamic skill path using AI
+        const dynamicSkills = await generateSkillPath(jobTitle);
+        if (dynamicSkills && Array.isArray(dynamicSkills) && dynamicSkills.length > 0) {
+          const validSkills = dynamicSkills
+            .filter(skill => skill && typeof skill === 'object' && skill.skill)
+            .map(skill => ({
+              skill: skill.skill || 'Unknown Skill',
+              course: skill.course || '#',
+              level: skill.level || 'Beginner',
+              importance: skill.importance || 'This skill is important for your career development.'
+            }))
+            .sort((a, b) => (levelOrder[a.level] || 0) - (levelOrder[b.level] || 0));
+          
+          setSkills(validSkills);
+          setIsDynamicGeneration(true);
+        } else {
+          setSkills([]);
+        }
+        setRecommendations([]);
+      }
+    } catch (error) {
+      console.error('Error in handleSearch:', error);
+      setSkills([]);
     }
     
     setLoading(false);
   };
 
+  const handleInputFocus = () => {
+    if (!jobTitle.trim()) {
+      setRecommendations(popularJobTitles.slice(0, 8)); // Show top 8 popular titles
+      setShowSuggestions(true);
+    }
+  };
+
+  const handleInputBlur = () => {
+    // Delay hiding suggestions to allow click events on recommendations
+    setTimeout(() => {
+      setShowSuggestions(false);
+    }, 200);
+  };
+
   const handleRecommendationClick = (selectedTitle) => {
     setJobTitle(selectedTitle);
-    const sortedSkills = [...skillCourseMap[selectedTitle]].sort(
-      (a, b) => levelOrder[a.level] - levelOrder[b.level]
-    );
-    setSkills(sortedSkills);
     setRecommendations([]);
-    setIsDynamicGeneration(false);
+    setShowSuggestions(false);
   };
 
   const handleInputChange = (e) => {
     const value = e.target.value;
     setJobTitle(value);
+    setShowSuggestions(true);
     
     if (value.trim().length > 1) {
       const recs = getRecommendations(value);
-      setRecommendations(recs.slice(0, 5));
+      setRecommendations(recs.slice(0, 8)); // Increased to 8 suggestions
+    } else if (value.trim().length === 0) {
+      // Show popular titles when input is empty
+      setRecommendations(popularJobTitles.slice(0, 8));
     } else {
       setRecommendations([]);
     }
     
     if (skills.length > 0) {
       setSkills([]);
+      setVisibleSkills([]);
     }
   };
 
-  const styles = getResponsiveStyles();
+  // Get job title recommendations with fuzzy matching
+  const getRecommendations = (searchTerm) => {
+    if (!searchTerm.trim() || !skillCourseMap) return [];
+    
+    const searchWords = searchTerm.toLowerCase().split(/\s+/);
+    
+    return Object.keys(skillCourseMap).filter(jobTitle => {
+      const titleWords = jobTitle.toLowerCase().split(/\s+/);
+      return searchWords.some(searchWord => 
+        titleWords.some(titleWord => 
+          titleWord.includes(searchWord) || searchWord.includes(titleWord)
+        )
+      );
+    });
+  };
+
+  const handleContactSubmit = async (e) => {
+    e.preventDefault();
+    setContactStatus('sending');
+    
+    try {
+      await emailjs.send(
+        'service_zld8ugb', // Replace with your EmailJS service ID
+        'template_pxa3k1a', // Replace with your EmailJS template ID
+        {
+          from_name: contactForm.name,
+          from_email: contactForm.email,
+          message: contactForm.issue,
+          to_name: 'Naveenkumar Kalluri'
+        },
+        'KCv25K18acrxF56er' // Replace with your EmailJS public key
+      );
+      
+      setContactStatus('success');
+      setContactForm({ name: '', email: '', issue: '' });
+      setTimeout(() => {
+        setShowContactForm(false);
+        setContactStatus('');
+      }, 2000);
+    } catch (error) {
+      console.error('Failed to send email:', error);
+      setContactStatus('error');
+    }
+  };
+
+  const handleContactChange = (e) => {
+    setContactForm({
+      ...contactForm,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const clearJobTitle = () => {
+    setJobTitle('');
+    setSkills([]);
+    setVisibleSkills([]);
+    setRecommendations([]);
+    setShowSuggestions(false);
+  };
+
+  const getSortedLeetcodeProblems = () => {
+    if (!leetcodeProblems) return [];
+    
+    const difficultyOrder = { "Easy": 1, "Medium": 2, "Hard": 3 };
+    
+    return [...leetcodeProblems].sort((a, b) => {
+      const diffA = difficultyOrder[a.difficulty] || 2;
+      const diffB = difficultyOrder[b.difficulty] || 2;
+      
+      if (leetcodeSortOrder === 'easy-to-hard') {
+        return diffA - diffB;
+      } else {
+        return diffB - diffA;
+      }
+    });
+  };
+
+  const styles = {
+    container: {
+      padding: isMobile ? '10px' : '20px',
+      maxWidth: '100%',
+      overflowX: 'hidden'
+    },
+    inputSection: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '15px',
+      alignItems: 'center',
+      width: '100%',
+      padding: '0 10px'
+    },
+    jobTitleContainer: {
+      position: 'relative',
+      width: isMobile ? '100%' : '400px',
+    },
+    jobTitleInput: {
+      padding: '12px',
+      fontSize: '16px',
+      width: '100%',
+      borderRadius: '12px',
+      border: '1px solid #61dafb'
+    },
+    resultsSection: {
+      marginTop: '32px',
+      width: '100%',
+      maxWidth: isMobile ? '100%' : '600px',
+      padding: '0 10px'
+    },
+    loadingIndicator: {
+      padding: '20px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: '#61dafb',
+      fontSize: '18px',
+      gap: '10px'
+    },
+    importanceText: {
+      color: '#BBB',
+      fontSize: '14px',
+      marginTop: '12px',
+      lineHeight: '1.5',
+      padding: '10px 15px',
+      borderLeft: '3px solid rgba(97, 218, 251, 0.4)',
+      background: 'rgba(255, 255, 255, 0.03)',
+      borderRadius: '0 6px 6px 0',
+      minHeight: '40px'
+    },
+    cursor: {
+      display: 'inline-block',
+      width: '8px',
+      height: '18px',
+      background: '#61dafb',
+      marginLeft: '2px',
+      animation: 'blink 1s infinite'
+    }
+  };
 
   return (
     <div className="App">
@@ -328,98 +472,69 @@ function App() {
           textAlign: 'center',
           padding: '0 10px'
         }}>
-          Get personalized learning paths for any job title
+          Type a job title to see a dynamic learning roadmap
         </p>
         
         {/* Input Section */}
         <div style={styles.inputSection}>
-          {/* CGPA Input */}
-          <div style={styles.cgpaContainer}>
-            <input
-              type="number"
-              placeholder="Enter your CGPA (0-10)"
-              value={cgpa}
-              onChange={handleCgpaChange}
-              min="0"
-              max="10"
-              step="0.1"
-              style={styles.cgpaInput}
-            />
-            
-            {/* CGPA Warning */}
-            {showCgpaWarning && (
-              <div style={styles.warning}>
-                ⚠️ <strong>Warning:</strong> With CGPA below 9.0, you need to work extra hard in this competitive job market! 
-                <br />
-                <span style={{ fontSize: '12px', fontStyle: 'italic' }}>
-                  Remember: CGPA is not mandatory if you have skills - skills are most important! 
-                  But for shortlisting, HR's see CGPA first 🫠
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Job Title Input */}
           <div style={styles.jobTitleContainer}>
-            <div style={{ position: 'relative', width: '100%' }}>
+            <div className="input-wrapper">
               <input
                 type="text"
                 placeholder={window.innerWidth <= 768 ? "Enter job title (e.g., Data Analyst)" : "Enter any job title (e.g., Data Analyst, UX Designer, Blockchain Developer)"}
                 value={jobTitle}
                 onChange={handleInputChange}
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
                 style={styles.jobTitleInput}
               />
-              
-              {/* Recommendations dropdown */}
-              {recommendations.length > 0 && (
-                <div style={{
-                  position: 'absolute',
-                  top: '100%',
-                  left: 0,
-                  right: 0,
-                  background: '#20232a',
-                  border: '1px solid #61dafb',
-                  borderRadius: '4px',
-                  marginTop: '4px',
-                  zIndex: 1000,
-                  maxHeight: '200px',
-                  overflowY: 'auto'
-                }}>
-                  {recommendations.map((rec, idx) => (
-                    <div
-                      key={idx}
-                      onClick={() => handleRecommendationClick(rec)}
-                      style={{
-                        padding: '12px',
-                        cursor: 'pointer',
-                        borderBottom: idx < recommendations.length - 1 ? '1px solid #444' : 'none',
-                        color: '#61dafb',
-                        fontSize: window.innerWidth <= 768 ? '14px' : '16px'
-                      }}
-                      onMouseEnter={(e) => e.target.style.backgroundColor = '#444'}
-                      onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-                    >
-                      {rec}
-                    </div>
-                  ))}
-                </div>
+              {jobTitle && (
+                <button 
+                  className="clear-button"
+                  onClick={clearJobTitle}
+                  type="button"
+                >
+                  ×
+                </button>
               )}
             </div>
             
-            <button
-              onClick={handleSearch}
-              disabled={loading || !cgpa || !jobTitle}
-              style={styles.searchButton}
-            >
-              {loading ? '🔍 Generating...' : '🚀 Search'}
-            </button>
+            {/* Enhanced Recommendations dropdown */}
+            {recommendations.length > 0 && showSuggestions && (
+              <div className="dropdown enhanced-dropdown">
+                {!jobTitle.trim() && (
+                  <div className="dropdown-header">
+                    💼 Popular Career Paths
+                  </div>
+                )}
+                {recommendations.map((rec, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => handleRecommendationClick(rec)}
+                    className="dropdown-item enhanced-dropdown-item"
+                  >
+                    <span className="dropdown-icon">
+                      {!jobTitle.trim() ? '📋' : '🔍'}
+                    </span>
+                    {rec}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
         {/* Results Section */}
         <div style={styles.resultsSection}>
-          {skills.length > 0 ? (
-            <div>
+          {loading && (
+            <div style={styles.loadingIndicator}>
+              <div className="loading-spinner"></div>
+              <span>Generating your personalized learning roadmap...</span>
+            </div>
+          )}
+          
+          {visibleSkills.length > 0 && !loading && (
+            <div style={{ marginBottom: '40px' }}>
               <div style={{ 
                 display: 'flex', 
                 flexDirection: window.innerWidth <= 768 ? 'column' : 'row',
@@ -446,61 +561,53 @@ function App() {
                   </span>
                 )}
               </div>
-
-              {/* CGPA-based motivation message */}
-              {cgpa && parseFloat(cgpa) < 9.0 && (
-                <div className="warning-message">
-                  💪 <strong>Stay Motivated!</strong> Your CGPA is {cgpa}, but remember - skills and projects matter more!
-                  <br />
-                  <span style={{ fontSize: '12px', marginTop: '5px', display: 'block' }}>
-                    <em>Reality check: CGPA isn't mandatory if you have skills - skills are most important! 
-                    But for shortlisting, HR's see CGPA first 🫠</em>
-                  </span>
-                  <br />
-                  Complete these courses, build projects, and show your passion. Many successful developers started with lower grades!
-                </div>
-              )}
-
-              {cgpa && parseFloat(cgpa) >= 9.0 && (
-                <div style={{ 
-                  marginBottom: '20px', 
-                  padding: '15px', 
-                  background: 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)', 
-                  borderRadius: '8px',
-                  color: 'white',
-                  fontSize: window.innerWidth <= 768 ? '13px' : '14px'
-                }}>
-                  🌟 <strong>Excellent CGPA!</strong> With your {cgpa} CGPA, you're well-positioned for this career. 
-                  Complete these skills to become even more competitive!
-                </div>
-              )}
               
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {skills.map((item, idx) => (
-                  <div key={item.skill} className="skill-card">
-                    <div className={`level-badge level-${item.level.toLowerCase()}`}>
-                      {item.level}
+              {/* Dynamic Roadmap Path with Live Generation Effect */}
+              <div className="roadmap-container">
+                <div className="roadmap-path"></div>
+                {visibleSkills.filter(item => item && item.skill).map((item, idx) => {
+                  // Additional safety checks for each item
+                  const skill = item?.skill || 'Unknown Skill';
+                  const level = item?.level || 'Beginner';
+                  const course = item?.course || '#';
+                  const importance = item?.importance || 'This skill is important for your career development.';
+                  
+                  return (
+                    <div key={`${skill}-${idx}`} className="roadmap-node">
+                      <div className="roadmap-step">{idx + 1}</div>
+                      <div className="roadmap-card">
+                        <div className={`level-badge level-${level.toLowerCase()}`}>
+                          {level}
+                        </div>
+                        
+                        <div className="roadmap-skill-title">
+                          {skill}
+                        </div>
+                        
+                        {/* Importance explanation with typewriter effect */}
+                        <div style={styles.importanceText}>
+                          {idx === typingIndex ? (
+                            <>
+                              {typedText}
+                              <span style={styles.cursor}></span>
+                            </>
+                          ) : idx < typingIndex ? (
+                            importance
+                          ) : null}
+                        </div>
+                        
+                        <a
+                          href={course}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="learn-button"
+                        >
+                          📚 Start Learning
+                        </a>
+                      </div>
                     </div>
-                    
-                    <div style={{ 
-                      fontWeight: 'bold', 
-                      fontSize: isMobile ? '16px' : '18px', 
-                      marginBottom: '12px',
-                      paddingRight: '90px'
-                    }}>
-                      {idx + 1}. {item.skill}
-                    </div>
-                    
-                    <a
-                      href={item.course}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="learn-button"
-                    >
-                      📚 Start Learning
-                    </a>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               
               {isDynamicGeneration && (
@@ -518,31 +625,208 @@ function App() {
                 </div>
               )}
             </div>
-          ) : (
-            jobTitle && !loading && recommendations.length === 0 && 
+          )}
+          
+          {!skills.length && jobTitle.length > 2 && !loading && recommendations.length === 0 && (
             <div style={{ 
               color: 'salmon', 
               marginTop: '16px',
               fontSize: window.innerWidth <= 768 ? '14px' : '16px',
-              textAlign: 'center'
+              textAlign: 'center',
+              marginBottom: '30px'
             }}>
-              No roadmap found for "{jobTitle}". Our AI will generate a custom learning path for you!
+              Generating a custom learning path for "{jobTitle}"...
             </div>
           )}
+          
+          {/* LeetCode Interview Must-Do Section */}
+          <div style={{ marginTop: '40px' }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '20px',
+              flexWrap: 'wrap',
+              gap: '15px'
+            }}>
+              <h2 style={{ 
+                fontSize: isMobile ? '20px' : '24px',
+                margin: '0',
+                color: '#8B5CF6'
+              }}>
+                🧠 LeetCode Interview Must-Do Problems
+              </h2>
+              
+              <div className="sort-controls">
+                <label style={{ 
+                  color: '#bbb', 
+                  fontSize: '14px', 
+                  marginRight: '10px' 
+                }}>
+                  Sort by:
+                </label>
+                <select 
+                  value={leetcodeSortOrder}
+                  onChange={(e) => setLeetcodeSortOrder(e.target.value)}
+                  className="sort-select"
+                >
+                  <option value="easy-to-hard">Easy to Hard</option>
+                  <option value="hard-to-easy">Hard to Easy</option>
+                </select>
+              </div>
+            </div>
+            
+            <p style={{ 
+              fontSize: isMobile ? '13px' : '14px', 
+              color: '#bbb',
+              marginBottom: '20px',
+              textAlign: 'center'
+            }}>
+              Master these handpicked LeetCode problems frequently asked in technical interviews
+            </p>
+            
+            <div className="leetcode-grid">
+              {getSortedLeetcodeProblems().map((problem) => (
+                <div key={problem?.id || Math.random()} className="leetcode-problem-card">
+                  <div className={`leetcode-difficulty leetcode-${(problem?.difficulty || 'easy').toLowerCase()}`}>
+                    {problem?.difficulty || 'Easy'}
+                  </div>
+                  
+                  <div className="leetcode-topic">
+                    {problem?.topic || 'General'}
+                  </div>
+                  
+                  <h3 className="leetcode-title">
+                    {problem?.title || 'Practice Problem'}
+                  </h3>
+                  
+                  <a 
+                    href={problem?.link || '#'} 
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="leetcode-solve-button"
+                  >
+                    💻 Solve Problem
+                  </a>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
+        
+        {/* Contact Form Modal */}
+        {showContactForm && (
+          <div className="modal-overlay" onClick={() => setShowContactForm(false)}>
+            <div className="contact-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h3>Report an Issue</h3>
+                <button 
+                  className="close-button"
+                  onClick={() => setShowContactForm(false)}
+                >
+                  ×
+                </button>
+              </div>
+              
+              <form onSubmit={handleContactSubmit} className="contact-form">
+                <div className="form-group">
+                  <label>Name</label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={contactForm.name}
+                    onChange={handleContactChange}
+                    required
+                    placeholder="Your name"
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label>Email</label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={contactForm.email}
+                    onChange={handleContactChange}
+                    required
+                    placeholder="your.email@example.com"
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label>Issue Description</label>
+                  <textarea
+                    name="issue"
+                    value={contactForm.issue}
+                    onChange={handleContactChange}
+                    required
+                    placeholder="Please describe the issue you're experiencing..."
+                    rows="4"
+                  />
+                </div>
+                
+                <button 
+                  type="submit" 
+                  className="submit-button"
+                  disabled={contactStatus === 'sending'}
+                >
+                  {contactStatus === 'sending' ? 'Sending...' : 'Send Report'}
+                </button>
+                
+                {contactStatus === 'success' && (
+                  <div className="status-message success">
+                    ✅ Thank you! Your report has been sent successfully.
+                  </div>
+                )}
+                
+                {contactStatus === 'error' && (
+                  <div className="status-message error">
+                    ❌ Failed to send report. Please try again.
+                  </div>
+                )}
+              </form>
+            </div>
+          </div>
+        )}
       </header>
+      
+      {/* Footer */}
+      <footer className="app-footer">
+        <div className="footer-content">
+          <div className="footer-section">
+            <h4>AI-Powered Skill Mapper</h4>
+            <p>Get personalized learning paths for your career goals</p>
+          </div>
+          
+          <div className="footer-section">
+            <h4>Support</h4>
+            <button 
+              className="contact-link"
+              onClick={() => setShowContactForm(true)}
+            >
+              📧 Report an Issue
+            </button>
+          </div>
+          
+          <div className="footer-section">
+            <h4>Resources</h4>
+            <div className="footer-links">
+              <a href="#leetcode" onClick={(e) => {
+                e.preventDefault();
+                document.querySelector('.leetcode-grid').scrollIntoView({ behavior: 'smooth' });
+              }}>
+                LeetCode Problems
+              </a>
+            </div>
+          </div>
+        </div>
+        
+        <div className="footer-bottom">
+          <p>© 2025 Naveenkumar Kalluri. All rights reserved.</p>
+        </div>
+      </footer>
     </div>
   );
 }
-
-// Helper function for level colors
-const getLevelColor = (level) => {
-  switch(level) {
-    case 'Beginner': return '#4CAF50';
-    case 'Intermediate': return '#FF9800';
-    case 'Advanced': return '#F44336';
-    default: return '#757575';
-  }
-};
 
 export default App;
