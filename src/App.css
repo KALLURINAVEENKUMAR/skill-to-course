@@ -1276,3 +1276,57 @@ button:hover:not(:disabled):after {
 .leetcode-problem-card:hover .leetcode-hard {
   box-shadow: 0 4px 12px rgba(244, 67, 54, 0.4);
 }
+
+
+
+
+
+
+/* Add this to your existing footer styles */
+
+.linkedin-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #0077b5 !important; /* LinkedIn brand color */
+  text-decoration: none;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 119, 181, 0.3);
+  background: rgba(0, 119, 181, 0.1);
+}
+
+.linkedin-link:hover {
+  color: #ffffff !important;
+  background: #0077b5;
+  border-color: #0077b5;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 119, 181, 0.3);
+}
+
+/* Update footer content grid for better spacing */
+.footer-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 30px;
+  margin-bottom: 30px;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  .footer-content {
+    grid-template-columns: 1fr;
+    gap: 25px;
+    text-align: center;
+  }
+  
+  .linkedin-link {
+    justify-content: center;
+    margin: 0 auto;
+    max-width: fit-content;
+  }
+}

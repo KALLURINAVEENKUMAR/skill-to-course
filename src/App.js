@@ -819,6 +819,20 @@ function App() {
               </a>
             </div>
           </div>
+
+          <div className="footer-section">
+            <h4>Connect</h4>
+            <div className="footer-links">
+              <a 
+                href="https://www.linkedin.com/in/naveenkumar-kalluri-3b7709224/" 
+                target="_blank"
+                rel="noopener noreferrer"
+                className="linkedin-link"
+              >
+                💼 LinkedIn Profile
+              </a>
+            </div>
+          </div>
         </div>
         
         <div className="footer-bottom">
